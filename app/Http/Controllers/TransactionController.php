@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BankAccount;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class TransactionController extends Controller
 {
@@ -16,6 +17,20 @@ class TransactionController extends Controller
     public function make(Request $request)
     {
         $data = $request->all();
+
+        $validator = Validator::make($data, [
+            'value' => 'required',
+            'payer' => 'required',
+            'payee' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()
+                ->json([
+                    'success' => false,
+                    'message' => 'Invalid request',
+                ], 400);
+        }
 
         $payer = User::find($data['payer']);
         $payerAccount = $payer->currentAccountBalance()->first();
