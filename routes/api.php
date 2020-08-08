@@ -13,8 +13,6 @@ $router->group(['prefix' => '/v1'], function () use ($router) {
     });
 
     $router->group(['prefix' => '/transaction'], function () use ($router) {
-        $router->get('/', function () use ($router) {
-            return 'Make a transaction';
-        });
+        $router->post('/', 'TransactionController@make');
     });
 });
