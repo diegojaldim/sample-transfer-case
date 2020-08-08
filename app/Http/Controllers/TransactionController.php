@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\BankAccount;
+use App\Factory\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Jobs\ProcessTransaction;
 
 class TransactionController extends Controller
 {
@@ -33,7 +35,7 @@ class TransactionController extends Controller
         }
 
         $payer = User::find($data['payer']);
-        $payerAccount = $payer->currentAccountBalance()->first();
+        $payee = User::find($data['payee']);
 
         if ($payer->type === User::CUSTOMER_TYPE_PJ) {
             return response()
@@ -42,9 +44,6 @@ class TransactionController extends Controller
                     'message' => 'PJ can\'t make a transaction',
                 ], 400);
         }
-
-        $payee = User::find($data['payee']);
-        $payeeAccount = $payee->currentAccountBalance()->first();
 
         if ($payer->id === $payee->id) {
             return response()
@@ -62,6 +61,8 @@ class TransactionController extends Controller
                 ], 400);
         }
 
+        $payerAccount = $payer->currentAccountBalance()->first();
+
         if ($payerAccount->current_account_balance < $data['value']) {
             return response()
                 ->json([
@@ -71,15 +72,23 @@ class TransactionController extends Controller
         }
 
         $debit = $payerAccount->current_account_balance - $data['value'];
-        $credit = $payerAccount->current_account_balance + $data['value'];
-
         $payerAccount->update([
             'current_account_balance' => $debit,
         ]);
 
-        $payeeAccount->update([
-            'current_account_balance' => $credit,
-        ]);
+        $transaction = new Transaction($data);
+
+        try {
+            ProcessTransaction::dispatch($transaction);
+        } catch (\Exception $e) {
+            // @todo update payer account balance
+
+            return response()
+                ->json([
+                    'success' => false,
+                    'message' => 'Something went wrong. Try again later',
+                ], 400);
+        }
 
         return response()
             ->json(['success' => true]);
