@@ -44,7 +44,7 @@ class SimpleTestCaseSeeder extends Seeder
 
             DB::table('bank_accounts')->insert([
                 'user_id' => $userId,
-                'current_account_balance' => 0.00
+                'current_account_balance' => 500.00
             ]);
         }
 
