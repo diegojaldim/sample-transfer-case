@@ -19,9 +19,9 @@ class TransactionController extends Controller
         $data = $request->all();
 
         $validator = Validator::make($data, [
-            'value' => 'required',
-            'payer' => 'required',
-            'payee' => 'required',
+            'value' => 'required|numeric',
+            'payer' => 'required|numeric',
+            'payee' => 'required|numeric',
         ]);
 
         if ($validator->fails()) {
@@ -35,8 +35,40 @@ class TransactionController extends Controller
         $payer = User::find($data['payer']);
         $payerAccount = $payer->currentAccountBalance()->first();
 
+        if ($payer->type === User::CUSTOMER_TYPE_PJ) {
+            return response()
+                ->json([
+                    'success' => false,
+                    'message' => 'PJ can\'t make a transaction',
+                ], 400);
+        }
+
         $payee = User::find($data['payee']);
         $payeeAccount = $payee->currentAccountBalance()->first();
+
+        if ($payer->id === $payee->id) {
+            return response()
+                ->json([
+                    'success' => false,
+                    'message' => 'You can\'t make a transaction for yourself',
+                ], 400);
+        }
+
+        if ($data['value'] <= 0) {
+            return response()
+                ->json([
+                    'success' => false,
+                    'message' => 'The value must be greater than 0!',
+                ], 400);
+        }
+
+        if ($payerAccount->current_account_balance < $data['value']) {
+            return response()
+                ->json([
+                    'success' => false,
+                    'message' => 'Insufficient founds :(',
+                ], 400);
+        }
 
         $debit = $payerAccount->current_account_balance - $data['value'];
         $credit = $payerAccount->current_account_balance + $data['value'];
