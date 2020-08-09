@@ -36,6 +36,22 @@ class TransactionController extends Controller
         $payer = User::find($data['payer']);
         $payee = User::find($data['payee']);
 
+        if (empty($payer)) {
+            return response()
+                ->json([
+                    'success' => false,
+                    'message' => 'Payer does not exists',
+                ], 400);
+        }
+
+        if (empty($payee)) {
+            return response()
+                ->json([
+                    'success' => false,
+                    'message' => 'Payee does not exists',
+                ], 400);
+        }
+
         if ($payer->type === User::CUSTOMER_TYPE_PJ) {
             return response()
                 ->json([
