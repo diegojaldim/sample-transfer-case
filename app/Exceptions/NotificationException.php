@@ -5,7 +5,7 @@ namespace App\Exceptions;
 
 use Throwable;
 
-class TransactionException extends \Exception
+class NotificationException extends \Exception
 {
 
     public function __construct(string $message = "", int $code = 0, Throwable $previous = null)
