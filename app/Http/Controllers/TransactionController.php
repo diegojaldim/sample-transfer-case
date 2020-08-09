@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BankAccount;
 use App\Factory\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -71,24 +70,12 @@ class TransactionController extends Controller
                 ], 400);
         }
 
-        $debit = $payerAccount->current_account_balance - $data['value'];
-        $payerAccount->update([
-            'current_account_balance' => $debit,
-        ]);
+        Transaction::debitForUser($payer->id, $data['value']);
 
         $transaction = new Transaction($data);
 
-        try {
-            ProcessTransaction::dispatch($transaction);
-        } catch (\Exception $e) {
-            // @todo update payer account balance
-
-            return response()
-                ->json([
-                    'success' => false,
-                    'message' => 'Something went wrong. Try again later',
-                ], 400);
-        }
+        // Dispatch job transaction
+        ProcessTransaction::dispatch($transaction);
 
         return response()
             ->json(['success' => true]);

@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Exceptions\TransactionException;
 use App\Factory\Transaction;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -31,7 +32,18 @@ class ProcessTransaction implements ShouldQueue
      */
     public function handle()
     {
-        $this->transaction->transfer();
+        try {
+            $this->transaction->transfer();
+        } catch (TransactionException $e) {
+            $this->failed();
+        }
+    }
+
+    public function failed()
+    {
+        $data = $this->transaction->getData();
+        Transaction::creditForUser($data['payer'], $data['value']);
+        //@todo notify client
     }
 
 }
